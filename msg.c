@@ -15,21 +15,23 @@ void error_exit(int msg_id, sqlite3* db){
 
 
 void* msg_receiver(void* arg){
-    reciever_args param = *((reciever_args *) arg);
+    receiver_args param = *((receiver_args *) arg);
     msgtime horarios;
+    uuid_t binuuid;
 
-    printf("horarios %ld\nmsgtime %ld\n", sizeof(horarios), sizeof(msgtime));
+    printf("ThreadSafe mode = %d\n", sqlite3_threadsafe());
+    //printf("horarios %ld\nmsgtime %ld\n", sizeof(horarios), sizeof(msgtime));
 
     long int msgtype;
-    FILE* f;
+    //FILE* f;
     char * errmsg;
-    char uuid[33];
+    char uuid[UUID_STR_LEN];
     struct tm * start_time;
     struct tm * end_time;
     sqlite3* db;
     int msg_rc;
     sqlite3_open(DB_PATH, &db);
-    int rc = sqlite3_exec(db, "CREATE TABLE IF NOT EXISTS PROCESSES(UUID varchar(35), START varchar(35), END varchar(35));", NULL, NULL, &errmsg);
+    int rc = sqlite3_exec(db, "CREATE TABLE IF NOT EXISTS PROCESSES(UUID varchar(38), START varchar(35), END varchar(35));", NULL, NULL, &errmsg);
     if(rc != SQLITE_OK){
         printf("Error at creating table: %s\n", errmsg);
         sqlite3_free(errmsg);
@@ -46,13 +48,22 @@ void* msg_receiver(void* arg){
             printf("msgrcv fail\n");
             error_exit(param.msg_id, db);
         }
-        printf("Recieve MSG \n");
-        //Make uuid
-        f = popen("uuidgen -r", "r");
-        fgets(uuid, sizeof(uuid), f);
-        pclose(f);
+
+        // pthread_mutex_lock(param.lockptr);
+        // (*param.activet_ptr)--;
+		// pthread_mutex_unlock(param.lockptr);
         
-        printf("%s\n", uuid);
+
+        //Make uuid
+
+        // f = popen("uuidgen -r", "r");
+        // fgets(uuid, sizeof(uuid), f);
+        // pclose(f);
+
+        uuid_generate_random(binuuid);
+        uuid_unparse_lower(binuuid, uuid);
+        
+        //printf("%s\n", uuid);
         start_time = localtime(&horarios.start_time);
         end_time = localtime(&horarios.end_time);
         //Quitar /n
@@ -62,33 +73,42 @@ void* msg_receiver(void* arg){
         char* str_end_time = asctime(end_time);
         str_end_time[strlen(str_end_time) - 1] = 0;
         
+        
         char sqlinsert[150];
         snprintf(sqlinsert, 150, "INSERT INTO PROCESSES VALUES('%s', '%s', '%s');", uuid, str_start_time, str_end_time);
         rc = sqlite3_exec(db, sqlinsert, NULL, NULL, &errmsg);
+        //printf("Recieve MSG \n");
         if(rc != SQLITE_OK){
             printf("Error: %s\n", errmsg);
             sqlite3_free(errmsg);
             error_exit(param.msg_id, db);
         }
+
+
         // Mensajes Debug
-        printf("%s\n", sqlinsert);
+        //printf("%s\n", sqlinsert);
         printf ("Inicio: %s", asctime(start_time));
         printf ("Final: %s", asctime(end_time));
+
+
     }
 }
 
 void* msg_sender(void *arg){
     sender_args param = *((sender_args *) arg);
+    
     char method[MAXBUF], uri[MAXBUF], version[MAXBUF];
+    printf("WORKER starting\n");
     sscanf(param.buff, "%s %s %s", method, uri, version);
+    printf("1\n");
 
     msgtime horarios;
     time(&horarios.start_time);
     request_handle(param.conn_fd, method, uri, version);
+
     
     close_or_die(param.conn_fd);
     //printf("\nCLOSED %d \n", param.conn_fd);
-    //printf("Closed connection %d\n", param->conn_fd);
     time(&horarios.end_time);
 
     horarios.mtype = 1;
@@ -100,5 +120,11 @@ void* msg_sender(void *arg){
     }
     //Mensajes debug
     printf("thread %ld\n", pthread_self());
+
+    pthread_mutex_lock(param.lockptr);
+    (*param.activet_ptr)--;
+    printf("worker threads = %d\n", (*param.activet_ptr));
+    pthread_mutex_unlock(param.lockptr);
+
     pthread_exit(0);
 }

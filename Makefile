@@ -1,10 +1,10 @@
 # An admittedly primitive Makefile
-# To compile, type "make" or make "all"
+# To compile, type "make" or "make all"
 # To remove files, type "make clean"
 
 CC = gcc
 CFLAGS = -Wall
-LIB = -lpthread -ldl
+LIB = -lpthread -ldl -luuid
 OBJS = wserver.o wclient.o request.o io_helper.o msg.o list.o
 SQ = sqlite3
 
@@ -22,7 +22,7 @@ spin.cgi: spin.c
 	$(CC) $(CFLAGS) -o spin.cgi spin.c
 
 sqlite3.o: $(SQ)/sqlite3.c
-	$(CC) $(CFLAGS) -c $(SQ)/sqlite3.c
+	$(CC) $(CFLAGS) -DSQLITE_THREADSAFE=0 -c $(SQ)/sqlite3.c
 
 .c.o:
 	$(CC) $(CFLAGS) -o $@ -c $<

@@ -5,6 +5,7 @@
 
 typedef struct node {
     int data;
+    int index;
  
     // Lower values indicate higher priority
     int priority;
@@ -13,13 +14,15 @@ typedef struct node {
  
 } Node;
 
-Node* newNode(int d, int p);
+Node* newNode(int d, int p, int i);
 
-int peek(Node** head);
+int peekData(Node** head);
+
+int peekIndex(Node** head);
 
 void pop(Node** head);
 
-void push(Node** head, int d, int p);
+void push(Node** head, int d, int p, int i);
 
 int empty(Node **head);
 

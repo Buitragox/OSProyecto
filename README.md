@@ -1,3 +1,5 @@
+sudo apt-get install uuid-dev
+
 # Servidor Web - Primer Parcial Sistemas Operativos
 
 Trabajo hecho por: Sebastian Arango y Jhoan Buitrago

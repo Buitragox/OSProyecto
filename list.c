@@ -1,18 +1,25 @@
 #include "list.h"
 
+// Implementación tomada de https://www.geeksforgeeks.org/priority-queue-using-linked-list/
 
-Node* newNode(int d, int p)
+Node* newNode(int d, int p, int i)
 {
     Node* temp = (Node*)malloc(sizeof(Node));
     temp->data = d;
     temp->priority = p;
+    temp->index = i;
     temp->next = NULL;
  
     return temp;
 }
 
-int peek(Node ** head){
-    return(*head)-> data;
+
+int peekData(Node ** head){
+    return(*head)->data;
+}
+
+int peekIndex(Node ** head){
+    return(*head)->index;
 }
 
 
@@ -22,17 +29,24 @@ void pop(Node ** head){
     free(temp);
 }
 
-void push(Node ** head, int d, int p){
+int empty(Node ** head){
+    return (*head) == NULL;
+}
+
+
+void push(Node ** head, int d, int p, int i){
     Node* start = (*head);
  
     // Create new Node
-    Node* temp = newNode(d, p);
+    Node* temp = newNode(d, p, i);
  
     // Special Case: The head of list has lesser
     // priority than new node. So insert new
     // node before head node and change head node.
-    if ((*head)->priority > p) {
- 
+    if (empty(head)) {
+        (*head) = temp;
+    }
+    else if ((*head)->priority > p) {
         // Insert New Node before head
         temp->next = *head;
         (*head) = temp;
@@ -53,6 +67,3 @@ void push(Node ** head, int d, int p){
 }
 
 
-int empty(Node ** head){
-    return (*head) == NULL;
-}
