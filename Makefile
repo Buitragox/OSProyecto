@@ -5,15 +5,15 @@
 CC = gcc
 CFLAGS = -Wall
 LIB = -lpthread -ldl
-OBJS = wserver.o wclient.o request.o io_helper.o msg.o
+OBJS = wserver.o wclient.o request.o io_helper.o msg.o list.o
 SQ = sqlite3
 
 .SUFFIXES: .c .o 
 
 all: wserver wclient spin.cgi spin.o
 
-wserver: wserver.o request.o io_helper.o sqlite3.o msg.o
-	$(CC) $(CFLAGS) -o wserver wserver.o request.o io_helper.o msg.o sqlite3.o $(LIB)
+wserver: wserver.o request.o io_helper.o sqlite3.o msg.o list.o
+	$(CC) $(CFLAGS) -o wserver wserver.o request.o io_helper.o msg.o sqlite3.o list.o $(LIB)
 
 wclient: wclient.o io_helper.o
 	$(CC) $(CFLAGS) -o wclient wclient.o io_helper.o

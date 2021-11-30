@@ -41,15 +41,15 @@ typedef struct sockaddr sockaddr_t;
 #define chdir_or_die(path) \
     assert(chdir(path) == 0); 
 #define open_or_die(pathname, flags, mode) \
-    ({ int rc = open(pathname, flags, mode); assert(rc >= 0); rc; })
+    ({ int orc = open(pathname, flags, mode); assert(orc >= 0); orc; })
 #define read_or_die(fd, buf, count) \
     ({ ssize_t rc = read(fd, buf, count); assert(rc >= 0); rc; })
 #define write_or_die(fd, buf, count) \
-    ({ ssize_t rc = write(fd, buf, count); assert(rc >= 0); rc; })
+    ({ ssize_t wrc = write(fd, buf, count); /*printf("\nerror %ld\n\n", wrc); printf("\nError: %s\n\n", strerror(errno)); */assert(wrc >= 0); wrc; })
 #define lseek_or_die(fd, offset, whence) \
     ({ off_t rc = lseek(fd, offset, whence); assert(rc >= 0); rc; })
 #define close_or_die(fd) \
-    assert(close(fd) == 0); 
+    ({/*printf("\nCLOSED %d \n", fd); */assert(close(fd) == 0);}); 
 #define select_or_die(n, readfds, writefds, exceptfds, timeout) \
     ({ int rc = select(n, readfds, writefds, exceptfds, timeout); assert(rc >= 0); rc; })
 #define dup2_or_die(fd1, fd2) \
