@@ -17,6 +17,9 @@ void error_exit(int msg_id, sqlite3* db){
 void* msg_receiver(void* arg){
     reciever_args param = *((reciever_args *) arg);
     msgtime horarios;
+
+    printf("horarios %ld\nmsgtime %ld\n", sizeof(horarios), sizeof(msgtime));
+
     long int msgtype;
     FILE* f;
     char * errmsg;
@@ -26,24 +29,25 @@ void* msg_receiver(void* arg){
     sqlite3* db;
     int msg_rc;
     sqlite3_open(DB_PATH, &db);
-    //printf("Before SQL \n");
     int rc = sqlite3_exec(db, "CREATE TABLE IF NOT EXISTS PROCESSES(UUID varchar(35), START varchar(35), END varchar(35));", NULL, NULL, &errmsg);
     if(rc != SQLITE_OK){
         printf("Error at creating table: %s\n", errmsg);
         sqlite3_free(errmsg);
         error_exit(param.msg_id, db);
     }
-    //printf("After SQL \n");
     while(1){
-        printf("Manager \n");
+        //printf("Start of while \n");
+
+        //msg_rc = msgrcv(param.msg_id, (void *)&horarios, sizeof(msgtime), msgtype, 0);
         msg_rc = msgrcv(param.msg_id, (void *)&horarios, sizeof(msgtime), msgtype, 0);
-        printf("%d\n", msg_rc);
+        //printf("msg_rc %d\n", msg_rc);
         if(msg_rc == -1){
+            printf("\nerror %d \n\n", errno); printf("\nError: %s\n\n", strerror(errno));
             printf("msgrcv fail\n");
             error_exit(param.msg_id, db);
         }
         printf("Recieve MSG \n");
-        //Generar uuid
+        //Make uuid
         f = popen("uuidgen -r", "r");
         fgets(uuid, sizeof(uuid), f);
         pclose(f);
@@ -80,17 +84,17 @@ void* msg_sender(void *arg){
 
     msgtime horarios;
     time(&horarios.start_time);
-
-    
-
     request_handle(param.conn_fd, method, uri, version);
     
     close_or_die(param.conn_fd);
     //printf("\nCLOSED %d \n", param.conn_fd);
     //printf("Closed connection %d\n", param->conn_fd);
     time(&horarios.end_time);
+
+    horarios.mtype = 1;
     int msg_rc = msgsnd(param.msg_id, (void *)&horarios, sizeof(msgtime), 0);
     if(msg_rc == -1) {
+        printf("\nerror %d\n", errno); printf("Error: %s\n\n", strerror(errno));
         printf("msgsnd fail\n");
         exit(-1);
     }

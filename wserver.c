@@ -21,7 +21,7 @@ int main(int argc, char *argv[]) {
 	int buffer_size;
 	pthread_t thread_receiver;
 	struct stat stat_buf;
-	char buf[MAXBUF], method[MAXBUF], uri[MAXBUF], version[MAXBUF];
+	char method[MAXBUF], uri[MAXBUF], version[MAXBUF];
     char filename[MAXBUF], cgiargs[MAXBUF];
 	int is_static;
 
@@ -65,6 +65,7 @@ int main(int argc, char *argv[]) {
 	//Abrir el mailbox
 	key_t key = ftok(PATH_NAME, PROJECT_ID);
 	int msg_id = msgget(key, 0666 | IPC_CREAT);
+	printf("master msg_id %d\n", msg_id);
 	if(msg_id == -1){
 		printf("msgget error\n");
 		exit(-1);
@@ -130,7 +131,7 @@ int main(int argc, char *argv[]) {
 
 		//printf("despues de hilo\n");
 
-		pthread_join(thread_receiver, NULL);
+		//pthread_join(thread_receiver, NULL);
 	}
     return 0;
 }

@@ -12,10 +12,11 @@
 #define EXTRA_SPACE 200
 #define TIME_SIZE 27
 #define PATH_NAME  "msg.h"
-#define PROJECT_ID 67836
-#define DB_PATH "/home/ragnaro7/Escritorio/ProyectoEntrega3/sqlite3/dbProject.db"
+#define PROJECT_ID 40
+#define DB_PATH "/home/infravibes/OSProyecto/sqlite3/dbProject.db"
 
 typedef struct msgtime {
+    long mtype;
     time_t start_time;
     time_t end_time;
 } msgtime;
