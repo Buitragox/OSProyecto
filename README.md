@@ -30,7 +30,11 @@ Una vez compilado ejecutamos wserver con los siguientes argumentos:
 
     - DIRECTORIO: se refiere a la ruta raiz donde se abrira el servidor web. Se recomienda usar ./website
     
-    - PUERTO: puerto
+    - PUERTO: puerto donde quedará el servidor. Ej: 8080
+
+    - BUFFERS: Cuantas peticiones se trabajaran al tiempo por hilos.
+
+    - SCHEDALG: Algoritmo de ordenamiento de las peticiones. Estan disponible FIFO y SFF.
 
 El script de python testRequest.py permite enviar n peticiones al servidor web una vez este funcionando. Se ejecuta con los siguientes argumentos:
 
