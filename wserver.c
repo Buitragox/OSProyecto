@@ -9,6 +9,7 @@ char default_root[] = ".";
 
 sender_args *sender_list;
 char (*buffers_list)[MAXBUF];
+
 int active_threads = 0;
 
 int pqSize = 0;
@@ -25,7 +26,6 @@ int bSize;
 //Asigna la conexión y los datos respectivos a un hilo;
 void assign_thread(int conn_fd, int index) {
 
-	printf("ASSIGN starting %d %d\n", conn_fd, index);
 	pthread_t thread_worker;
 	sender_list[index].msg_id = msg_id;
 	sender_list[index].conn_fd = conn_fd;
@@ -34,13 +34,6 @@ void assign_thread(int conn_fd, int index) {
 	sender_list[index].activet_ptr = &active_threads;
 
 	pthread_create(&thread_worker, NULL, msg_sender, &sender_list[index]);
-
-	printf("assign_thread finishing\n"); 
-
-	// pthread_mutex_lock(&lock_activet);
-	// active_threads++;
-	// printf("assign threads = %d\n", active_threads);
-	// pthread_mutex_unlock(&lock_activet);
 }
 
 
@@ -57,7 +50,7 @@ void* worker_assignment(void* arg) {
 			pop(&pqueue);
 			pqSize--;
 
-			printf("assign pqSize %d\n", pqSize);
+			printf("pqSize %d\n", pqSize);
 
 			pthread_mutex_unlock(&lock_queue);
 
@@ -65,7 +58,7 @@ void* worker_assignment(void* arg) {
 
 			pthread_mutex_lock(&lock_activet);
 			active_threads++;
-			printf("assign threads = %d\n", active_threads);
+			printf("threads = %d\n", active_threads);
 			pthread_mutex_unlock(&lock_activet);
 
 			assign_thread(conn_fd, index);
@@ -161,63 +154,68 @@ int main(int argc, char *argv[]) {
 	//Hilo maestro se encarga de aceptar conexiones y ponerlas en la cola
 	while (1){
 
-		if (pqSize == bSize)
-		{
-			printf("full queue %d\n", pqSize);
-			continue;
+		if (pqSize < bSize) { // Si la cola esta llena, continue
+			struct sockaddr_in client_addr;
+			int client_len = sizeof(client_addr);
+			conn_fd = accept_or_die(listen_fd, (sockaddr_t *) &client_addr, (socklen_t *) &client_len);
+
+
+			// Preprocesamiento del archivo
+			readline_or_die(conn_fd, buffers[index], MAXBUF);
+			sscanf(buffers[index], "%s %s %s", method, uri, version);
+			//printf("method:%s uri:%s version:%s\n", method, uri, version);
+			
+			//Check method == "GET"
+			if (strcasecmp(method, "GET")) {
+				request_error(conn_fd, method, "501", "Not Implemented",
+							"server does not implement this method");
+				close_or_die(conn_fd);
+				continue;
+			}
+			
+			request_read_headers(conn_fd);
+			
+			// Obtener el nombre del archivo pedido
+			request_parse_uri(uri, filename, cgiargs);
+
+			// Revisar si existe y cuál es su tamaño con stat()
+			int res = stat(filename, &stat_buf);
+			if (res < 0) {
+				request_error(conn_fd, filename, "404", "Not found", 
+							"server could not find this file");
+				close_or_die(conn_fd);
+				continue;
+			}
+
+			int prio;
+			if (strcasecmp("SFF\0", scheduler) == 0)
+			{
+				printf("SFF\n");
+				prio = stat_buf.st_size;
+			}
+			else
+			{
+				prio = 0;
+				printf("FIFO\n");
+			}
+				
+
+			
+			//Zona critica de la priority queue
+			//Push un elemento a la cola
+			pthread_mutex_lock(&lock_queue);
+			push(&pqueue, conn_fd, prio, index);
+			pqSize++;
+			printf("pqSize %d\n", pqSize);
+			pthread_mutex_unlock(&lock_queue);
+			
+			//index = (index + 1) % (buffer_size + EXTRA_SPACE)
+			index++;
+			if (index == bSize + EXTRA_SPACE)
+				index = 0;
 		}
-
-		struct sockaddr_in client_addr;
-		int client_len = sizeof(client_addr);
-		conn_fd = accept_or_die(listen_fd, (sockaddr_t *) &client_addr, (socklen_t *) &client_len);
-
-
-		// Preprocesamiento del archivo
-		readline_or_die(conn_fd, buffers[index], MAXBUF);
-		sscanf(buffers[index], "%s %s %s", method, uri, version);
-		//printf("method:%s uri:%s version:%s\n", method, uri, version);
-		
-		//Check method == "GET"
-		if (strcasecmp(method, "GET")) {
-			request_error(conn_fd, method, "501", "Not Implemented",
-						 "server does not implement this method");
-			close_or_die(conn_fd);
-			continue;
-		}
-		
-		request_read_headers(conn_fd);
-		
-		// Obtener el nombre del archivo pedido
-		request_parse_uri(uri, filename, cgiargs);
-
-		// Revisar si existe y cuál es su tamaño con stat()
-		int res = stat(filename, &stat_buf);
-		if (res < 0) {
-			request_error(conn_fd, filename, "404", "Not found", 
-						"server could not find this file");
-			close_or_die(conn_fd);
-			continue;
-		}
-
-		int prio;
-		if (strcasecmp("SFF\0", scheduler) == 0)
-			prio = stat_buf.st_size;
 		else
-			prio = 0;
-
-		
-		//Zona critica de la priority queue
-		pthread_mutex_lock(&lock_queue);
-		push(&pqueue, conn_fd, prio, index);
-		pqSize++;
-		printf("master pqSize %d\n", pqSize);
-		pthread_mutex_unlock(&lock_queue);
-		
-		//index = (index + 1) % (buffer_size + EXTRA_SPACE)
-		index++;
-		if (index == bSize + EXTRA_SPACE)
-			index = 0;
-		
+			printf("full queue %d\n", pqSize);
 	}
     return 0;
 }

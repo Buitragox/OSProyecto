@@ -98,9 +98,7 @@ void* msg_sender(void *arg){
     sender_args param = *((sender_args *) arg);
     
     char method[MAXBUF], uri[MAXBUF], version[MAXBUF];
-    printf("WORKER starting\n");
     sscanf(param.buff, "%s %s %s", method, uri, version);
-    printf("1\n");
 
     msgtime horarios;
     time(&horarios.start_time);
@@ -121,9 +119,10 @@ void* msg_sender(void *arg){
     //Mensajes debug
     printf("thread %ld\n", pthread_self());
 
+    // Zona critica active_threads
     pthread_mutex_lock(param.lockptr);
     (*param.activet_ptr)--;
-    printf("worker threads = %d\n", (*param.activet_ptr));
+    printf("threads = %d\n", (*param.activet_ptr));
     pthread_mutex_unlock(param.lockptr);
 
     pthread_exit(0);

@@ -3,7 +3,7 @@
 dir="./website"
 port="7070"
 buffers="5"
-schedalg="FIFO"
+schedalg="SFF"
 
 cleanStr="make clean"
 makeStr="make"
